@@ -90,14 +90,14 @@
     </div>
 
     <script>
-        let wordsList = [];
+        let dictionary = [];
         let currentWord = "";
         let targetWord = "";
 
         async function loadWords() {
             const response = await fetch('dictionary.txt');
             const text = await response.text();
-            wordsList = text.split(/\r?\n/).filter(word => word.trim().length > 0);
+            dictionary = text.split(/\r?\n/).filter(word => word.trim().length > 0);
             startGame();
         }
 
@@ -112,7 +112,7 @@
         function getRandomWord() {
             let randomWord = "";
             do {
-                randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+                randomWord = dictionary[Math.floor(Math.random() * dictionary.length)];
             } while (randomWord.length < 4 || randomWord.length > 6);
             return randomWord;
         }
@@ -121,7 +121,7 @@
             const userWord = document.getElementById('user-word').value.trim().toLowerCase();
             const message = document.getElementById('message');
 
-            if (!wordsList.includes(userWord)) {
+            if (!dictionary.includes(userWord.toUpperCase())) {
                 message.innerText = "Invalid word! Word not in list.";
                 return;
             }
