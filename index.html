@@ -91,10 +91,12 @@
 
     <script>
         let dictionary = [];
+        let dictionaryCommon = [];
         let currentWord = "";
         let targetWord = "";
 
         async function loadWords() {
+            let response;
             response = await fetch('dictionary.txt');
             dictionary = await response.text();
             dictionary = dictionary.split(/\r?\n/).filter(word => word.trim().length > 0);
