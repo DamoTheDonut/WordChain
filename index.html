@@ -110,7 +110,7 @@
         }
 
         function getRandomWord() {
-            let randomWord;
+            let randomWord = "";
             do {
                 randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
             } while (randomWord.length < 4 || randomWord.length > 6);
