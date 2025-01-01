@@ -90,11 +90,16 @@
             font-size: 1.2rem;
         }
 
-        .new-game {
+        .new-game, .undo {
             margin-top: 1rem;
             font-size: 1.2rem;
             padding: 0.5rem 1rem;
             cursor: pointer;
+        }
+
+        .undo {
+            background-color: #f44336;
+            color: white;
         }
     </style>
 </head>
@@ -112,6 +117,7 @@
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
         <button class="new-game" id="new-game-button" onclick="startNewGame()" style="display:none;">New Game</button>
+        <button class="undo" id="undo-button" onclick="undoMove()" style="display:none;">Undo</button>
     </div>
 
     <script>
@@ -121,6 +127,7 @@
         let targetWord = "";
         let wordCount = 0;
         let usedWords = [];
+        let previousWords = [];
 
         async function loadWords() {
             let response;
@@ -143,9 +150,11 @@
             document.getElementById('word-list').innerHTML = "";
             document.getElementById('word-counter').innerText = "Words used: 0";
             wordCount = 0;
-            usedWords = [];
+            usedWords = [currentWord];
+            previousWords = [];
             document.getElementById('user-word').disabled = false;
             document.getElementById('new-game-button').style.display = "none";
+            document.getElementById('undo-button').style.display = "none";
             updateWordList();
         }
 
@@ -171,14 +180,17 @@
                 return;
             }
 
-            updateWordList();
+            previousWords.push(currentWord); // Save the current word before the change
             currentWord = userWord;
             usedWords.push(currentWord);
             wordCount++;
 
             document.getElementById('start-word').innerText = currentWord;
             document.getElementById('user-word').value = "";
+            updateWordList();
             document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
+
+            document.getElementById('undo-button').style.display = "inline-block"; // Enable undo button
 
             if (currentWord === targetWord) {
                 message.innerText = "Congratulations! You reached the target word.";
@@ -231,6 +243,21 @@
 
         function startNewGame() {
             startGame();
+        }
+
+        function undoMove() {
+            if (previousWords.length > 0) {
+                currentWord = previousWords.pop();
+                usedWords.pop(); // Remove the last word
+                wordCount--;
+                document.getElementById('start-word').innerText = currentWord;
+                updateWordList();
+                document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
+
+                if (previousWords.length === 0) {
+                    document.getElementById('undo-button').style.display = "none"; // Hide undo button
+                }
+            }
         }
 
         function handleEnter(event) {
