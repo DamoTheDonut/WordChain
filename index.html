@@ -90,32 +90,28 @@
             font-size: 1.2rem;
         }
 
-        .new-game-btn {
-            display: none;
-            padding: 1rem;
+        .new-game {
+            margin-top: 1rem;
             font-size: 1.2rem;
+            padding: 0.5rem 1rem;
             cursor: pointer;
         }
-
-        .input-container input {
-            display: block;
-        }
-
     </style>
 </head>
 <body>
     <button class="toggle-mode" onclick="toggleMode()">💡</button>
 
     <div class="container">
-        <div class="word" id="start-word"></div>
         <div class="word-list" id="word-list"></div>
+        <div class="word" id="start-word"></div>
         <div class="input-container">
-            <input type="text" id="user-word" placeholder="Enter next word">
+            <input type="text" id="user-word" placeholder="Enter next word" onkeydown="handleEnter(event)">
             <button onclick="submitWord()">Submit</button>
         </div>
+        <div class="word" id="end-word"></div>
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
-        <button class="new-game-btn" id="new-game-btn" onclick="startGame()">Start New Game</button>
+        <button class="new-game" id="new-game-button" onclick="startNewGame()" style="display:none;">New Game</button>
     </div>
 
     <script>
@@ -143,12 +139,13 @@
             targetWord = getRandomWord();
 
             document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
             document.getElementById('word-list').innerHTML = "";
             document.getElementById('word-counter').innerText = "Words used: 0";
-            document.getElementById('new-game-btn').style.display = "none";
-            document.getElementById('user-word').style.display = "block";
             wordCount = 0;
             usedWords = [];
+            document.getElementById('user-word').disabled = false;
+            document.getElementById('new-game-button').style.display = "none";
             updateWordList();
         }
 
@@ -178,15 +175,15 @@
             usedWords.push(currentWord);
             wordCount++;
 
-            document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
-            updateWordList();
-
+            document.getElementById('start-word').innerText = currentWord;
             document.getElementById('user-word').value = "";
+            updateWordList();
+            document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
 
             if (currentWord === targetWord) {
                 message.innerText = "Congratulations! You reached the target word.";
-                document.getElementById('new-game-btn').style.display = "block";
-                document.getElementById('user-word').style.display = "none";  // Hide input after reaching the target
+                document.getElementById('user-word').disabled = true;
+                document.getElementById('new-game-button').style.display = "inline-block";
             } else {
                 message.innerText = "Good move! Keep going.";
             }
@@ -232,12 +229,15 @@
             document.body.classList.toggle('dark-mode');
         }
 
-        // Event listener for pressing enter to submit word
-        document.getElementById('user-word').addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
+        function startNewGame() {
+            startGame();
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
                 submitWord();
             }
-        });
+        }
 
         window.onload = loadWords;
     </script>
