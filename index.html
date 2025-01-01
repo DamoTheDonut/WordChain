@@ -101,6 +101,14 @@
             background-color: #f44336;
             color: white;
         }
+
+        .valid-word {
+            color: green;
+        }
+
+        .invalid-word {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -116,6 +124,8 @@
         <div class="word" id="end-word"></div>
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
+        <input type="text" id="dictionary-check" placeholder="Check word in dictionary" oninput="checkWordInDictionary()">
+        <span id="word-validation-message"></span>
         <button class="new-game" id="new-game-button" onclick="startNewGame()" style="display:none;">New Game</button>
         <button class="undo" id="undo-button" onclick="undoMove()" style="display:none;">Undo</button>
     </div>
@@ -203,7 +213,7 @@
 
         function updateWordList() {
             const wordListContainer = document.getElementById('word-list');
-            wordListContainer.innerHTML = usedWords.map(word => `<span>${word}</span>`).join('');
+            wordListContainer.innerHTML = usedWords.slice(0, usedWords.length - 1).map(word => `<span>${word}</span>`).join('');
         }
 
         function isOneLetterChange(word1, word2) {
@@ -263,6 +273,19 @@
         function handleEnter(event) {
             if (event.key === "Enter") {
                 submitWord();
+            }
+        }
+
+        function checkWordInDictionary() {
+            const userInput = document.getElementById('dictionary-check').value.trim().toUpperCase();
+            const validationMessage = document.getElementById('word-validation-message');
+            
+            if (dictionary.includes(userInput)) {
+                validationMessage.textContent = "Valid word!";
+                validationMessage.className = "valid-word";
+            } else {
+                validationMessage.textContent = "Invalid word!";
+                validationMessage.className = "invalid-word";
             }
         }
 
