@@ -171,13 +171,13 @@
                 return;
             }
 
+            updateWordList();
             currentWord = userWord;
             usedWords.push(currentWord);
             wordCount++;
 
             document.getElementById('start-word').innerText = currentWord;
             document.getElementById('user-word').value = "";
-            updateWordList();
             document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
 
             if (currentWord === targetWord) {
