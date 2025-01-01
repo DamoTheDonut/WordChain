@@ -118,10 +118,10 @@
         }
 
         function submitWord() {
-            const userWord = document.getElementById('user-word').value.trim().toLowerCase();
+            const userWord = document.getElementById('user-word').value.trim().toUpperCase();
             const message = document.getElementById('message');
 
-            if (!dictionary.includes(userWord.toUpperCase())) {
+            if (!dictionary.includes(userWord)) {
                 message.innerText = "Invalid word! Word not in list.";
                 return;
             }
