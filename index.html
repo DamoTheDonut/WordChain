@@ -118,7 +118,7 @@
         function getRandomWord() {
             let randomWord = "";
             do {
-                randomWord = dictionaryCommon[Math.floor(Math.random() * dictionary.length)];
+                randomWord = dictionaryCommon[Math.floor(Math.random() * dictionaryCommon.length)];
             } while (randomWord.length < 4 || randomWord.length > 6);
             return randomWord;
         }
