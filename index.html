@@ -90,13 +90,17 @@
             font-size: 1.2rem;
         }
 
-        .share-container {
-            margin-top: 1rem;
+        .new-game-btn {
+            display: none;
+            padding: 1rem;
+            font-size: 1.2rem;
+            cursor: pointer;
         }
 
-        .new-game {
-            margin-top: 1rem;
+        .input-container input {
+            display: block;
         }
+
     </style>
 </head>
 <body>
@@ -106,14 +110,12 @@
         <div class="word" id="start-word"></div>
         <div class="word-list" id="word-list"></div>
         <div class="input-container">
-            <input type="text" id="user-word" placeholder="Enter next word" onkeydown="checkEnter(event)">
+            <input type="text" id="user-word" placeholder="Enter next word">
             <button onclick="submitWord()">Submit</button>
         </div>
-        <div class="word" id="end-word"></div>
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
-        <div class="share-container" id="share-container"></div>
-        <button class="new-game" id="new-game" style="display: none;" onclick="startGame()">New Game</button>
+        <button class="new-game-btn" id="new-game-btn" onclick="startGame()">Start New Game</button>
     </div>
 
     <script>
@@ -124,10 +126,6 @@
         let wordCount = 0;
         let usedWords = [];
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const startParam = urlParams.get('start');
-        const endParam = urlParams.get('end');
-
         async function loadWords() {
             let response;
             response = await fetch('dictionary.txt');
@@ -137,15 +135,7 @@
             response = await fetch('dictionaryCommon.txt');
             dictionaryCommon = await response.text();
             dictionaryCommon = dictionaryCommon.split(/\r?\n/).filter(word => word.trim().length > 0);
-
-            if (startParam && endParam) {
-                currentWord = startParam.toUpperCase();
-                targetWord = endParam.toUpperCase();
-                document.getElementById('start-word').innerText = currentWord;
-                document.getElementById('end-word').innerText = targetWord;
-            } else {
-                startGame();
-            }
+            startGame();
         }
 
         function startGame() {
@@ -153,13 +143,13 @@
             targetWord = getRandomWord();
 
             document.getElementById('start-word').innerText = currentWord;
-            document.getElementById('end-word').innerText = targetWord;
             document.getElementById('word-list').innerHTML = "";
             document.getElementById('word-counter').innerText = "Words used: 0";
+            document.getElementById('new-game-btn').style.display = "none";
+            document.getElementById('user-word').style.display = "block";
             wordCount = 0;
             usedWords = [];
             updateWordList();
-            updateShareLink();
         }
 
         function getRandomWord() {
@@ -188,19 +178,18 @@
             usedWords.push(currentWord);
             wordCount++;
 
-            document.getElementById('start-word').innerText = currentWord;
-            document.getElementById('user-word').value = "";
-            updateWordList();
             document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
+            updateWordList();
+
+            document.getElementById('user-word').value = "";
 
             if (currentWord === targetWord) {
                 message.innerText = "Congratulations! You reached the target word.";
-                document.getElementById('new-game').style.display = 'block';
+                document.getElementById('new-game-btn').style.display = "block";
+                document.getElementById('user-word').style.display = "none";  // Hide input after reaching the target
             } else {
                 message.innerText = "Good move! Keep going.";
             }
-
-            updateShareLink();
         }
 
         function updateWordList() {
@@ -243,17 +232,12 @@
             document.body.classList.toggle('dark-mode');
         }
 
-        function updateShareLink() {
-            const shareContainer = document.getElementById('share-container');
-            const shareUrl = `${window.location.origin}?start=${currentWord}&end=${targetWord}`;
-            shareContainer.innerHTML = `<a href="${shareUrl}" target="_blank">Share this game</a>`;
-        }
-
-        function checkEnter(event) {
-            if (event.key === "Enter") {
+        // Event listener for pressing enter to submit word
+        document.getElementById('user-word').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
                 submitWord();
             }
-        }
+        });
 
         window.onload = loadWords;
     </script>
