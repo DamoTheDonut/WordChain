@@ -110,7 +110,11 @@
         }
 
         function getRandomWord() {
-            return wordsList[Math.floor(Math.random() * wordsList.length)];
+            do {
+            randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+            }
+            while (randomWord.length < 4 or randomWod.length > 6);
+            return randomWord;
         }
 
         function submitWord() {
