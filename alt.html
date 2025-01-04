@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Chain Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .word {
+            font-size: 2rem;
+            margin: 1rem 0;
+            word-wrap: break-word;
+        }
+
+        .input-container {
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input {
+            padding: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            cursor: pointer;
+            width: 100%;
+            max-width: 150px;
+        }
+
+        .toggle-mode {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .toggle-mode:hover {
+            opacity: 0.8;
+        }
+
+        .message {
+            margin-top: 1rem;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .word-list {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .word-list span {
+            display: block;
+            margin: 0.5rem 0;
+        }
+
+        .counter, .flip-button {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .valid-word {
+            color: green;
+        }
+
+        .invalid-word {
+            color: red;
+        }
+
+        .flip-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <button class="toggle-mode" onclick="toggleMode()">💡</button>
+
+    <div class="container">
+        <div class="word-list" id="word-list"></div>
+        <div class="word" id="start-word"></div>
+        <div class="input-container">
+            <input type="text" id="user-word" placeholder="Enter next word" onkeydown="handleEnter(event)">
+            <button onclick="submitWord()">Submit</button>
+        </div>
+        <div class="word" id="end-word"></div>
+        <div class="message" id="message"></div>
+        <div class="counter" id="word-counter">Words used: 0</div>
+        <input type="text" id="dictionary-check" placeholder="Check word in dictionary" oninput="checkWordInDictionary()">
+        <span id="word-validation-message"></span>
+        <button class="flip-button" id="flip-button" onclick="flipChain()">Flip Chain</button>
+        <button class="new-game" id="new-game-button" onclick="startNewGame()" style="display:none;">New Game</button>
+        <button class="undo" id="undo-button" onclick="undoMove()" style="display:none;">Undo</button>
+    </div>
+
+    <script>
+        let dictionary = [];
+        let dictionaryCommon = [];
+        let currentWord = "";
+        let targetWord = "";
+        let wordCount = 0;
+        let usedWords = [];
+        let previousWords = [];
+        let isFlipped = false; // Track if the chain is flipped
+
+        async function loadWords() {
+            let response;
+            response = await fetch('dictionary.txt');
+            dictionary = await response.text();
+            dictionary = dictionary.split(/\r?\n/).filter(word => word.trim().length > 0);
+
+            response = await fetch('dictionaryCommon.txt');
+            dictionaryCommon = await response.text();
+            dictionaryCommon = dictionaryCommon.split(/\r?\n/).filter(word => word.trim().length > 0);
+            startGame();
+        }
+
+        function startGame() {
+            currentWord = getRandomWord();
+            targetWord = getRandomWord();
+
+            document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
+            document.getElementById('word-list').innerHTML = "";
+            document.getElementById('word-counter').innerText = "Words used: 0";
+            wordCount = 0;
+            usedWords = [currentWord];
+            previousWords = [];
+            document.getElementById('user-word').disabled = false;
+            document.getElementById('new-game-button').style.display = "none";
+            document.getElementById('undo-button').style.display = "none";
+            isFlipped = false;
+            updateWordList();
+        }
+
+        function getRandomWord() {
+            let randomWord = "";
+            do {
+                randomWord = dictionaryCommon[Math.floor(Math.random() * dictionaryCommon.length)];
+            } while (randomWord.length < 4 || randomWord.length > 6);
+            return randomWord;
+        }
+
+        function submitWord() {
+            const userWord = document.getElementById('user-word').value.trim().toUpperCase();
+            const message = document.getElementById('message');
+
+            if (!dictionary.includes(userWord)) {
+                message.innerText = "Invalid word! Word not in list.";
+                return;
+            }
+
+            if (!isOneLetterChange(isFlipped ? targetWord : currentWord, userWord)) {
+                message.innerText = "Invalid move! You can only add, remove, or change one letter.";
+                return;
+            }
+
+            previousWords.push(isFlipped ? targetWord : currentWord);
+            if (isFlipped) {
+                targetWord = userWord;
+            } else {
+                currentWord = userWord;
+            }
+            usedWords.push(userWord);
+            wordCount++;
+
+            document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
+            document.getElementById('user-word').value = "";
+            updateWordList();
+            document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
+
+            document.getElementById('undo-button').style.display = "inline-block";
+
+            if (currentWord === targetWord) {
+                message.innerText = "Congratulations! You reached the target word.";
+                document.getElementById('user-word').disabled = true;
+                document.getElementById('new-game-button').style.display = "inline-block";
+            } else {
+                message.innerText = "Good move! Keep going.";
+            }
+        }
+
+        function updateWordList() {
+            const wordListContainer = document.getElementById('word-list');
+            wordListContainer.innerHTML = usedWords.map(word => `<span>${word}</span>`).join('');
+        }
+
+        function isOneLetterChange(word1, word2) {
+            if (word1 === word2) return false;
+
+            if (Math.abs(word1.length - word2.length) > 1) return false;
+
+            let differences = 0;
+
+            if (word1.length === word2.length) {
+                for (let i = 0; i < word1.length; i++) {
+                    if (word1[i] !== word2[i]) differences++;
+                    if (differences > 1) return false;
+                }
+            } else {
+                const [shorter, longer] = word1.length < word2.length ? [word1, word2] : [word2, word1];
+
+                let i = 0, j = 0;
+                while (i < shorter.length && j < longer.length) {
+                    if (shorter[i] !== longer[j]) {
+                        differences++;
+                        if (differences > 1) return false;
+                        j++;
+                    } else {
+                        i++;
+                        j++;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        function toggleMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        function startNewGame() {
+            startGame();
+        }
+
+        function undoMove() {
+            if (previousWords.length > 0) {
+                if (isFlipped) {
+                    targetWord = previousWords.pop();
+                } else {
+                    currentWord = previousWords.pop();
+                }
+                usedWords.pop();
+                wordCount--;
+                document.getElementById('start-word').innerText = currentWord;
+                document.getElementById('end-word').innerText = targetWord;
+                updateWordList();
+                document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
+
+                if (previousWords.length === 0) {
+                    document.getElementById('undo-button').style.display = "none";
+                }
+            }
+        }
+
+        function flipChain() {
+            isFlipped = !isFlipped;
+
+            const temp = currentWord;
+            currentWord = targetWord;
+            targetWord = temp;
+
+            document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
+                submitWord();
+            }
+        }
+
+        function checkWordInDictionary() {
+            const userInput = document.getElementById('dictionary-check').value.trim().toUpperCase();
+            const validationMessage = document.getElementById('word-validation-message');
+            
+            if (dictionary.includes(userInput)) {
+                validationMessage.textContent = "Valid word!";
+                validationMessage.className = "valid-word";
+            } else {
+                validationMessage.textContent = "Invalid word!";
+                validationMessage.className = "invalid-word";
+            }
+        }
+
+        window.onload = loadWords;
+    </script>
+</body>
+</html>
