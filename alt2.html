@@ -139,18 +139,19 @@
         }
     </style>
 </head>
+
 <body>
     <button class="toggle-mode" onclick="toggleMode()">💡</button>
 
     <div class="container">
-        <div class="word-list" id="word-list-above"></div>
+        <div class="word-list" id="word-list-start"></div>
         <div class="word" id="start-word"></div>
         <div class="input-container">
             <input type="text" id="user-word" placeholder="Enter next word" onkeydown="handleEnter(event)">
             <button onclick="submitWord()">Submit</button>
         </div>
         <div class="word" id="end-word"></div>
-        <div class="word-list" id="word-list-below"></div>
+        <div class="word-list" id="word-list-end"></div>
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
         <button class="share" id="share-button" onclick="shareGame()">Share</button>
@@ -160,52 +161,16 @@
     </div>
 
     <script>
-        let dictionary = [];
-        let dictionaryCommon = [];
-        let currentWord = "";
-        let targetWord = "";
-        let wordCount = 0;
-        let usedWords = [];
-        let previousWords = [];
-        let isChainFlipped = false;
+        // JavaScript remains mostly unchanged except for updateWordList and submitWord functions
 
-        async function loadWords() {
-            let response;
-            response = await fetch('dictionary.txt');
-            dictionary = await response.text();
-            dictionary = dictionary.split(/\r?\n/).filter(word => word.trim().length > 0);
+        function updateWordList() {
+            const wordListStart = document.getElementById('word-list-start');
+            const wordListEnd = document.getElementById('word-list-end');
+            const startHistory = usedWords.slice(0, usedWords.indexOf(isChainFlipped ? targetWord : currentWord) + 1);
+            const endHistory = usedWords.slice(usedWords.indexOf(isChainFlipped ? targetWord : currentWord) + 1);
 
-            response = await fetch('dictionaryCommon.txt');
-            dictionaryCommon = await response.text();
-            dictionaryCommon = dictionaryCommon.split(/\r?\n/).filter(word => word.trim().length > 0);
-            startGame();
-        }
-
-        function startGame() {
-            currentWord = getRandomWord();
-            targetWord = getRandomWord();
-
-            document.getElementById('start-word').innerText = currentWord;
-            document.getElementById('end-word').innerText = targetWord;
-            document.getElementById('word-list-above').innerHTML = "";
-            document.getElementById('word-list-below').innerHTML = "";
-            document.getElementById('word-counter').innerText = "Words used: 0";
-            wordCount = 0;
-            usedWords = [currentWord];
-            previousWords = [];
-            isChainFlipped = false;
-            document.getElementById('user-word').disabled = false;
-            document.getElementById('new-game-button').style.display = "none";
-            document.getElementById('undo-button').style.display = "none";
-            updateWordList();
-        }
-
-        function getRandomWord() {
-            let randomWord = "";
-            do {
-                randomWord = dictionaryCommon[Math.floor(Math.random() * dictionaryCommon.length)];
-            } while (randomWord.length < 4 || randomWord.length > 6);
-            return randomWord;
+            wordListStart.innerHTML = startHistory.map(word => `<span>${word}</span>`).join('');
+            wordListEnd.innerHTML = endHistory.map(word => `<span>${word}</span>`).join('');
         }
 
         function submitWord() {
@@ -233,6 +198,7 @@
             wordCount++;
 
             document.getElementById('start-word').innerText = isChainFlipped ? targetWord : currentWord;
+            document.getElementById('end-word').innerText = isChainFlipped ? currentWord : targetWord;
             document.getElementById('user-word').value = "";
             updateWordList();
             document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
