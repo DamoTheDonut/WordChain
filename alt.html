@@ -31,13 +31,13 @@
 
         .container {
             text-align: center;
-            width: 90%;
-            max-width: 600px;
+            max-width: 90%;
         }
 
         .word {
-            font-size: 2rem;
+            font-size: 1.5rem;
             margin: 1rem 0;
+            word-wrap: break-word;
         }
 
         .input-container {
@@ -47,13 +47,13 @@
         input {
             padding: 0.5rem;
             font-size: 1rem;
-            width: 70%;
+            max-width: 80%;
         }
 
         button {
             padding: 0.5rem 1rem;
             font-size: 1rem;
-            margin-left: 0.5rem;
+            margin: 0.5rem;
             cursor: pointer;
         }
 
@@ -93,7 +93,7 @@
             font-size: 1.2rem;
         }
 
-        .new-game, .undo {
+        .new-game, .undo, .flip-chain {
             margin-top: 1rem;
             font-size: 1.2rem;
             padding: 0.5rem 1rem;
@@ -113,28 +113,17 @@
             color: red;
         }
 
-        .share {
-            margin-top: 1rem;
-            font-size: 1rem;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .word {
-                font-size: 1.5rem;
-            }
-
-            input {
-                font-size: 0.9rem;
+                font-size: 1.2rem;
             }
 
             button {
                 font-size: 0.9rem;
             }
 
-            .counter, .message {
-                font-size: 1rem;
+            input {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -143,6 +132,7 @@
     <button class="toggle-mode" onclick="toggleMode()">💡</button>
 
     <div class="container">
+        <div class="word-list" id="word-list"></div>
         <div class="word" id="start-word"></div>
         <div class="input-container">
             <input type="text" id="user-word" placeholder="Enter next word" onkeydown="handleEnter(event)">
@@ -151,11 +141,11 @@
         <div class="word" id="end-word"></div>
         <div class="message" id="message"></div>
         <div class="counter" id="word-counter">Words used: 0</div>
-        <div class="word-list" id="word-list"></div>
-        <button class="share" id="share-button" onclick="shareGame()">Share</button>
+        <input type="text" id="dictionary-check" placeholder="Check word in dictionary" oninput="checkWordInDictionary()">
+        <span id="word-validation-message"></span>
         <button class="new-game" id="new-game-button" onclick="startNewGame()" style="display:none;">New Game</button>
         <button class="undo" id="undo-button" onclick="undoMove()" style="display:none;">Undo</button>
-        <button class="toggle-direction" onclick="toggleChainDirection()">Flip Chain</button>
+        <button class="flip-chain" id="flip-chain-button" onclick="flipChain()">Flip Chain</button>
     </div>
 
     <script>
@@ -164,9 +154,10 @@
         let currentWord = "";
         let targetWord = "";
         let wordCount = 0;
-        let usedWords = [];
+        let usedWordsForward = [];
+        let usedWordsBackward = [];
         let previousWords = [];
-        let isChainFlipped = false;
+        let isFlipped = false;
 
         async function loadWords() {
             let response;
@@ -189,9 +180,10 @@
             document.getElementById('word-list').innerHTML = "";
             document.getElementById('word-counter').innerText = "Words used: 0";
             wordCount = 0;
-            usedWords = [currentWord];
+            usedWordsForward = [currentWord];
+            usedWordsBackward = [targetWord];
             previousWords = [];
-            isChainFlipped = false;
+            isFlipped = false;
             document.getElementById('user-word').disabled = false;
             document.getElementById('new-game-button').style.display = "none";
             document.getElementById('undo-button').style.display = "none";
@@ -215,29 +207,28 @@
                 return;
             }
 
-            if (!isOneLetterChange(isChainFlipped ? targetWord : currentWord, userWord)) {
+            if (!isOneLetterChange(currentWord, userWord)) {
                 message.innerText = "Invalid move! You can only add, remove, or change one letter.";
                 return;
             }
 
-            previousWords.push(isChainFlipped ? targetWord : currentWord); // Save the current word before the change
-            if (isChainFlipped) {
-                targetWord = userWord;
+            previousWords.push(currentWord); // Save the current word before the change
+            currentWord = userWord;
+            if (isFlipped) {
+                usedWordsBackward.push(currentWord);
             } else {
-                currentWord = userWord;
+                usedWordsForward.push(currentWord);
             }
-
-            usedWords.push(userWord);
             wordCount++;
 
-            document.getElementById('start-word').innerText = isChainFlipped ? targetWord : currentWord;
+            document.getElementById('start-word').innerText = currentWord;
             document.getElementById('user-word').value = "";
             updateWordList();
             document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
 
             document.getElementById('undo-button').style.display = "inline-block"; // Enable undo button
 
-            if (currentWord === targetWord) {
+            if ((isFlipped && currentWord === usedWordsForward[0]) || (!isFlipped && currentWord === targetWord)) {
                 message.innerText = "Congratulations! You reached the target word.";
                 document.getElementById('user-word').disabled = true;
                 document.getElementById('new-game-button').style.display = "inline-block";
@@ -248,8 +239,8 @@
 
         function updateWordList() {
             const wordListContainer = document.getElementById('word-list');
-            const history = isChainFlipped ? usedWords.slice().reverse() : usedWords;
-            wordListContainer.innerHTML = history.map(word => `<span>${word}</span>`).join('');
+            const wordsToDisplay = isFlipped ? usedWordsBackward.slice(1) : usedWordsForward.slice(0, -1);
+            wordListContainer.innerHTML = wordsToDisplay.map(word => `<span>${word}</span>`).join('');
         }
 
         function isOneLetterChange(word1, word2) {
@@ -293,14 +284,14 @@
 
         function undoMove() {
             if (previousWords.length > 0) {
-                if (isChainFlipped) {
-                    targetWord = previousWords.pop();
+                currentWord = previousWords.pop();
+                if (isFlipped) {
+                    usedWordsBackward.pop();
                 } else {
-                    currentWord = previousWords.pop();
+                    usedWordsForward.pop();
                 }
-                usedWords.pop(); // Remove the last word
                 wordCount--;
-                document.getElementById('start-word').innerText = isChainFlipped ? targetWord : currentWord;
+                document.getElementById('start-word').innerText = currentWord;
                 updateWordList();
                 document.getElementById('word-counter').innerText = `Words used: ${wordCount}`;
 
@@ -316,20 +307,25 @@
             }
         }
 
-        function toggleChainDirection() {
-            isChainFlipped = !isChainFlipped;
-            document.getElementById('start-word').innerText = isChainFlipped ? targetWord : currentWord;
-            document.getElementById('end-word').innerText = isChainFlipped ? currentWord : targetWord;
-            updateWordList();
+        function checkWordInDictionary() {
+            const userInput = document.getElementById('dictionary-check').value.trim().toUpperCase();
+            const validationMessage = document.getElementById('word-validation-message');
+            
+            if (dictionary.includes(userInput)) {
+                validationMessage.textContent = "Valid word!";
+                validationMessage.className = "valid-word";
+            } else {
+                validationMessage.textContent = "Invalid word!";
+                validationMessage.className = "invalid-word";
+            }
         }
 
-        function shareGame() {
-            const url = new URL(window.location.href);
-            url.searchParams.set('start', currentWord);
-            url.searchParams.set('end', targetWord);
-            navigator.clipboard.writeText(url.toString()).then(() => {
-                alert("Game link copied to clipboard!");
-            });
+        function flipChain() {
+            isFlipped = !isFlipped;
+            [currentWord, targetWord] = [targetWord, currentWord];
+            document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
+            updateWordList();
         }
 
         window.onload = loadWords;
