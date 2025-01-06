@@ -139,7 +139,6 @@
         }
     </style>
 </head>
-
 <body>
     <button class="toggle-mode" onclick="toggleMode()">💡</button>
 
@@ -161,7 +160,53 @@
     </div>
 
     <script>
-        // JavaScript remains mostly unchanged except for updateWordList and submitWord functions
+        let dictionary = [];
+        let dictionaryCommon = [];
+        let currentWord = "";
+        let targetWord = "";
+        let wordCount = 0;
+        let usedWords = [];
+        let previousWords = [];
+        let isChainFlipped = false;
+
+        async function loadWords() {
+            let response;
+            response = await fetch('dictionary.txt');
+            dictionary = await response.text();
+            dictionary = dictionary.split(/\r?\n/).filter(word => word.trim().length > 0);
+
+            response = await fetch('dictionaryCommon.txt');
+            dictionaryCommon = await response.text();
+            dictionaryCommon = dictionaryCommon.split(/\r?\n/).filter(word => word.trim().length > 0);
+            startGame();
+        }
+
+        function startGame() {
+            currentWord = getRandomWord();
+            targetWord = getRandomWord();
+
+            document.getElementById('start-word').innerText = currentWord;
+            document.getElementById('end-word').innerText = targetWord;
+            document.getElementById('word-list-above').innerHTML = "";
+            document.getElementById('word-list-below').innerHTML = "";
+            document.getElementById('word-counter').innerText = "Words used: 0";
+            wordCount = 0;
+            usedWords = [currentWord];
+            previousWords = [];
+            isChainFlipped = false;
+            document.getElementById('user-word').disabled = false;
+            document.getElementById('new-game-button').style.display = "none";
+            document.getElementById('undo-button').style.display = "none";
+            updateWordList();
+        }
+
+        function getRandomWord() {
+            let randomWord = "";
+            do {
+                randomWord = dictionaryCommon[Math.floor(Math.random() * dictionaryCommon.length)];
+            } while (randomWord.length < 4 || randomWord.length > 6);
+            return randomWord;
+        }
 
         function updateWordList() {
             const wordListStart = document.getElementById('word-list-start');
@@ -211,20 +256,6 @@
                 document.getElementById('new-game-button').style.display = "inline-block";
             } else {
                 message.innerText = "Good move! Keep going.";
-            }
-        }
-
-        function updateWordList() {
-            const wordListAbove = document.getElementById('word-list-above');
-            const wordListBelow = document.getElementById('word-list-below');
-            const history = isChainFlipped ? usedWords.slice().reverse() : usedWords;
-
-            if (isChainFlipped) {
-                wordListBelow.innerHTML = history.map(word => `<span>${word}</span>`).join('');
-                wordListAbove.innerHTML = "";
-            } else {
-                wordListAbove.innerHTML = history.map(word => `<span>${word}</span>`).join('');
-                wordListBelow.innerHTML = "";
             }
         }
 
